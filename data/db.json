@@ -1,0 +1,8 @@
+{
+  "products": [
+    { "id": 1, "name": "Молоко фермерское", "price": 450, "image": "/images/mlk.jpg" },
+    { "id": 2, "name": "Мёд цветочный", "price": 3200, "image": "/images/med.jpg" },
+    { "id": 3, "name": "Сыр молочный", "price": 2800, "image": "/images/syr.jpg" },
+    { "id": 4, "name": "Картофель", "price": 180, "image": "/images/pot.jpg" }
+  ]
+}
