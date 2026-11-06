@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
+
+// Изменять каталог может только администратор: сначала токен, потом роль
+const adminOnly = [requireAuth, requireRole('admin')];
 
 const SELECT_PRODUCT = 'SELECT id, name, category, price, unit, image FROM products';
 
@@ -65,7 +69,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products — создать товар
-router.post('/', async (req, res) => {
+router.post('/', adminOnly, async (req, res) => {
   const body = req.body ?? {};
   const errors = validateProduct(body);
   if (errors.length > 0) {
@@ -82,7 +86,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/products/:id — полностью заменить данные товара
-router.put('/:id', async (req, res) => {
+router.put('/:id', adminOnly, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(400).json({ error: 'id должен быть числом' });
   }
@@ -106,7 +110,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/products/:id — удалить товар
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', adminOnly, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(400).json({ error: 'id должен быть числом' });
   }
