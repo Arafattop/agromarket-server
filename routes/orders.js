@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
+
+// Персональные данные клиентов — только для администратора
+const adminOnly = [requireAuth, requireRole('admin')];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_QUANTITY = 10;
@@ -30,7 +34,7 @@ function validateOrder(body) {
 }
 
 // GET /api/orders?status=new — список заявок, новые сверху
-router.get('/', async (req, res) => {
+router.get('/', adminOnly, async (req, res) => {
   const values = [];
   let sql = `
     SELECT o.id, o.product_id, p.name AS product_name, o.name, o.email, o.phone,
@@ -74,7 +78,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/orders/:id — сменить статус заявки
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', adminOnly, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(400).json({ error: 'id должен быть числом' });
   }

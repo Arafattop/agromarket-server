@@ -2,13 +2,27 @@
   "name": "agromarket-server",
   "version": "1.0.0",
   "type": "module",
-"scripts": {
-  "dev": "node --watch server.js",
-  "start": "node server.js",
-  "db:init": "node db/seed.js"
-},
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "db:init": "node db/seed.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
+    "supertest": "^7.1.0",
+    "vitest": "^3.2.4"
   }
 }
