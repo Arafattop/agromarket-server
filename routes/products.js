@@ -1,50 +1,59 @@
-import { Router } from "express";
-import { products } from "../data/products.js";
+import { Router } from 'express';
+import { pool } from '../db/pool.js';
 
 const router = Router();
 
-// Относительный путь картинки превращаем в полный URL сервера,
-// чтобы React (порт 5173) загружал её с API (порт 3000)
+// Относительный путь картинки делаем полным адресом сервера.
+// Эту функцию не удаляем: без неё React не загрузит картинки с порта 3000.
 function withImageUrl(product, req) {
-  if (!product.image || product.image.startsWith("http")) return product;
-  return { ...product, image: `${req.protocol}://${req.get("host")}${product.image}` };
+  if (!product.image || product.image.startsWith('http')) return product;
+  return { ...product, image: `${req.protocol}://${req.get('host')}${product.image}` };
 }
 
+// Допустимые варианты сортировки. Имя столбца нельзя передать через $1,
+// поэтому подставляем только значения из этого списка.
+const sortOptions = new Map([
+  ['price', 'price ASC'],
+  ['-price', 'price DESC'],
+]);
+
 // GET /api/products?search=...&maxPrice=...&sort=price|-price
-router.get("/", (req, res) => {
-  const { search, maxPrice, sort } = req.query;
+router.get('/', async (req, res) => {
+  const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+  const values = [`%${search}%`];
+  let sql = 'SELECT id, name, category, price, unit, image FROM products WHERE name ILIKE $1';
 
-  // Параметр может прийти массивом (?search=a&search=b) — принимаем только строку
-  const term = typeof search === "string" ? search.trim().toLowerCase() : "";
-
-  let limit = null;
-  if (maxPrice !== undefined) {
-    limit = Number(maxPrice);
-    if (!Number.isFinite(limit)) {
-      return res.status(400).json({ error: "maxPrice должен быть числом" });
+  if (req.query.maxPrice !== undefined) {
+    const max = Number(req.query.maxPrice);
+    if (!Number.isFinite(max)) {
+      return res.status(400).json({ error: 'maxPrice должен быть числом' });
     }
+    values.push(max);
+    sql += ` AND price <= $${values.length}`;
   }
 
-  let result = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(term) &&
-      (limit === null || Number(p.price) <= limit),
-  );
+  const order = sortOptions.get(req.query.sort) ?? 'id ASC';
+  sql += ` ORDER BY ${order}`;
 
-  // [...result] — сортируем копию, а не исходный массив
-  if (sort === "price") result = [...result].sort((a, b) => a.price - b.price);
-  if (sort === "-price") result = [...result].sort((a, b) => b.price - a.price);
-
-  res.json(result.map((p) => withImageUrl(p, req)));
+  const { rows } = await pool.query(sql, values);
+  res.json(rows.map((p) => withImageUrl(p, req)));
 });
 
 // GET /api/products/:id
-router.get("/:id", (req, res) => {
-  const product = products.find((p) => String(p.id) === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: "Товар не найден" });
+router.get('/:id', async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ error: 'id должен быть числом' });
   }
-  res.json(withImageUrl(product, req));
+
+  const { rows } = await pool.query(
+    'SELECT id, name, category, price, unit, image FROM products WHERE id = $1',
+    [req.params.id],
+  );
+
+  if (rows.length === 0) {
+    return res.status(404).json({ error: 'Товар не найден' });
+  }
+  res.json(withImageUrl(rows[0], req));
 });
 
 export default router;
