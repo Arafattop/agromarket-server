@@ -7,7 +7,7 @@ import { logger } from './middleware/logger.js';
 import { pool } from './db/pool.js';
 import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
-
+import { errorHandler } from './middleware/errorHandler.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +44,8 @@ app.use('/api/orders', ordersRouter);
 app.use((req, res) => {
   res.status(404).json({ error: `Маршрут ${req.method} ${req.originalUrl} не найден` });
 });
+// Обработчик ошибок — ВСЕГДА последний
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`API запущен: http://localhost:${PORT}`);
