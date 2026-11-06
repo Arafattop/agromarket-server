@@ -1,8 +1,8 @@
-// Обработчик ошибок: четыре аргумента, поэтому Express считает его error handler'ом
+// Обработчик ошибок: четыре аргумента, поэтому Express узнаёт его как error handler
 export function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
 
-  // Ошибки express.json(): тело слишком большое или битый JSON
+  // Ошибки express.json()
   if (err.type === 'entity.too.large') {
     return res.status(413).json({ error: 'Слишком большой запрос' });
   }
@@ -21,7 +21,14 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Данные не прошли проверку базы' });
   }
 
-  // Всё остальное — наша ошибка. Подробности в консоль, клиенту — общий текст
-  console.error(err);
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  // Ошибки 4xx с собственным текстом — отдаём текст клиенту
+  const status = err.status || err.statusCode;
+  if (status && status < 500) {
+    return res.status(status).json({ error: err.message });
+  }
+
+  // Всё остальное — наша ошибка. В лог пишем всё, клиенту в продакшене — общую фразу
+  console.error(`[${req.method} ${req.originalUrl}]`, err);
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(500).json({ error: isProd ? 'Внутренняя ошибка сервера' : err.message });
 }

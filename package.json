@@ -2,13 +2,18 @@
   "name": "agromarket-server",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
     "db:init": "node db/seed.js",
+    "db:migrate": "node db/migrate.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "smoke": "node scripts/smoke.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
