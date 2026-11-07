@@ -3,6 +3,16 @@ import bcrypt from 'bcryptjs';
 import { readFileSync } from 'node:fs';
 import { pool } from './pool.js';
 
+// --- Предохранитель: db:init УДАЛЯЕТ ВСЕ ТАБЛИЦЫ ---
+// Без --force разрешаем только локальную базу (localhost в DATABASE_URL)
+const target = process.env.DATABASE_URL || process.env.PGHOST || '';
+const isLocal = /localhost|127\.0\.0\.1/.test(target);
+if (!isLocal && !process.argv.includes('--force')) {
+  console.error('Отказ: db:init запущен НЕ на локальной базе — все данные будут удалены.');
+  console.error('Если база пустая и вы уверены: node db/seed.js --force');
+  process.exit(1);
+}
+
 const schema = readFileSync('./db/schema.sql', 'utf-8');
 const { products } = JSON.parse(readFileSync('./data/db.json', 'utf-8'));
 
@@ -16,7 +26,6 @@ for (const p of products) {
   );
 }
 
-// Администратор: email и пароль из .env, в базу кладём только хэш
 const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
 await pool.query(
   `INSERT INTO users (name, email, password_hash, role)
