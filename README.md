@@ -62,3 +62,38 @@ npm run dev        # http://localhost:3000 (перезапуск при сохр
 - Какие замечания я получил(а) на code-review и что исправил(а): ...
 - Какие замечания я оставил(а) напарнику: ...
 - Использовал(а) ли ИИ и для чего: ...
+
+## Продакшен
+
+- Сайт: https://agromarket-ЛОГИН.vercel.app
+- API: https://agromarket-api-ЛОГИН.onrender.com/api/health
+- Схема: React (Vercel) → Express (Render, Frankfurt) → PostgreSQL (Neon, Frankfurt)
+
+### Переменные окружения (значения только в панелях сервисов)
+
+| Переменная | Где задана | Секрет |
+|---|---|---|
+| DATABASE_URL | Render | да |
+| JWT_SECRET | Render | да |
+| JWT_EXPIRES_IN | Render | нет |
+| CORS_ORIGIN | Render | нет |
+| NODE_ENV | Render | нет |
+| VITE_API_URL | Vercel | нет |
+| RENDER_DEPLOY_HOOK_URL | GitHub Secrets | да |
+| API_URL, FRONTEND_URL | GitHub Variables | нет |
+
+### Конвейер
+
+Pull Request → CI (test) → merge в main → test → deploy (deploy hook Render с ref=SHA) → smoke-тест.
+
+### Аудит
+
+- Ответ на /api/health: db ok, version совпадает с последним коммитом main: ...
+- Заголовки helmet есть, X-Powered-By отсутствует: ...
+- Пароли в базе — хэши bcrypt: ...
+
+### Ответы на вопросы
+
+- Почему сервер и база в одном регионе: ...
+- Что сломалось бы без trust proxy: ...
+- Почему db:init нельзя на продакшене, а migrate можно: ...
