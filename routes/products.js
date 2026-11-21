@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { productSchema } from '../validation/schemas.js';
 
 const router = Router();
 
@@ -69,7 +71,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products — создать товар
-router.post('/', adminOnly, async (req, res) => {
+router.post('/', adminOnly, validate(productSchema), async (req, res) => {
   const body = req.body ?? {};
   const errors = validateProduct(body);
   if (errors.length > 0) {
@@ -86,7 +88,7 @@ router.post('/', adminOnly, async (req, res) => {
 });
 
 // PUT /api/products/:id — полностью заменить данные товара
-router.put('/:id', adminOnly, async (req, res) => {
+router.put('/:id', adminOnly, validate(productSchema), async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(400).json({ error: 'id должен быть числом' });
   }

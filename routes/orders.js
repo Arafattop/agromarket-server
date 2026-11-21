@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { orderSchema } from '../validation/schemas.js';
 
 const router = Router();
 
@@ -53,7 +55,7 @@ router.get('/', adminOnly, async (req, res) => {
 });
 
 // POST /api/orders — новая заявка из формы
-router.post('/', async (req, res) => {
+router.post('/', validate(orderSchema), async (req, res) => {
   const body = req.body ?? {};
   const errors = validateOrder(body);
   if (errors.length > 0) {
