@@ -1,119 +1,94 @@
-![CI](https://github.com/ЛОГИН/agromarket-server/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Arafattop/agromarket-server/actions/workflows/ci.yml/badge.svg)
 
 # АгроМаркет API
 
-Backend для каталога и оптовых заявок «АгроМаркета». Express 5, данные из `data/db.json`, заявки пока в памяти.
+Сервер для каталога и заявок «АгроМаркета». Express 5, PostgreSQL, JWT, роли user и admin.
 
-## Запуск
+## Запуск локально
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000 (перезапуск при сохранении)
+npm run db:init    # создаёт таблицы, товары и админа (только локальная база)
+npm run dev        # http://localhost:3000
 ```
 
-Картинки товаров: положите файлы в `public/images/` (имена должны совпадать с `image` в `data/db.json`, например `mlk.jpg`). Доступны по адресу `http://localhost:3000/images/mlk.jpg`.
+Картинки товаров лежат в `public/images/`, открываются по `http://localhost:3000/images/имя.jpg`.
+
+## Переменные окружения
+
+Файл `.env` в git не попадает. Пример лежит в `.env.example`.
+
+```
+DATABASE_URL=postgresql://postgres:ПАРОЛЬ@localhost:5433/agromarket
+PORT=3000
+CORS_ORIGIN=http://localhost:5173
+JWT_SECRET=длинная_случайная_строка
+JWT_EXPIRES_IN=2h
+ADMIN_EMAIL=admin@agromarket.kz
+ADMIN_PASSWORD=пароль_админа
+```
+
+Секретный ключ можно сделать так:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
 ## Эндпоинты
 
-| Метод | Путь | Описание | Ответы |
-|-------|------|----------|--------|
-| GET | /api/health | проверка сервера | 200 |
-| GET | /api/about | информация о проекте | 200 |
-| GET | /api/products | список товаров; `?search=мол`, `?maxPrice=1000`, `?sort=price` или `?sort=-price` (можно комбинировать) | 200, 400 |
-| GET | /api/products/:id | один товар | 200, 404 |
-| GET | /api/orders | список заявок | 200 |
-| POST | /api/orders | новая заявка (JSON: name, email, quantity обязательны) | 201, 400 |
+| Метод | Путь | Доступ | Ответы |
+|---|---|---|---|
+| GET | /api/health | все | 200, 503 |
+| GET | /api/about | все | 200 |
+| GET | /api/categories | все | 200 |
+| POST | /api/auth/register | все | 201, 400, 409, 429 |
+| POST | /api/auth/login | все | 200, 400, 401, 429 |
+| GET | /api/auth/me | токен | 200, 401, 404 |
+| GET | /api/products | все | 200, 400 |
+| GET | /api/products/:id | все | 200, 400, 404 |
+| POST | /api/products | admin | 201, 400, 401, 403 |
+| PUT | /api/products/:id | admin | 200, 400, 401, 403, 404 |
+| DELETE | /api/products/:id | admin | 204, 400, 401, 403, 404 |
+| POST | /api/orders | все | 201, 400 |
+| GET | /api/orders | admin | 200, 401, 403 |
+| PATCH | /api/orders/:id | admin | 200, 400, 401, 403, 404 |
 
-### Правила заявки (POST /api/orders)
+Фильтры каталога: `?search=мол`, `?maxPrice=1000`, `?sort=price` или `?sort=-price`. Можно комбинировать.
 
-- `name` — непустая строка;
-- `email` — корректный формат;
-- `quantity` — число, не меньше 10 (кг);
-- остальные поля необязательны.
+## Тесты
 
-Пример ошибки: `{ "error": "Минимальный объём заказа — 10 кг" }` со статусом 400.
+1. Создай базу `agromarket_test`.
+2. Скопируй `.env.test.example` в `.env.test` и поставь свой пароль.
+3. Запусти:
 
-## Лабораторная 5 — ответы
+```bash
+npm test              # все тесты
+npm run test:watch    # следит за изменениями
+npm run coverage      # покрытие, строка Lines: ...%
+```
 
-- Content-Type у `res.send` и `res.json`: ...
-- Что происходит без `next()` в middleware: ...
-- Логгер после маршрутов: ...
-- Отправка формы без `express.json()`: ...
-- Почему CORS блокирует localhost:5173 → localhost:3000: ...
-- Использовал(а) ли ИИ и для чего: ...
-
-## Тестирование
-
-1. Создать базу `agromarket_test` (pgAdmin или psql)
-2. Скопировать `.env.example` или `.env.test.example` в `.env.test` и указать в нём тестовую базу
-3. `npm test` — все тесты, `npm run test:watch` — режим наблюдения, `npm run coverage` — покрытие (Lines: ...%)
-
-## Правила работы с Git
-
-- Ветка `main` защищена: изменения только через Pull Request
-- PR сливается после зелёного CI и одобрения ревьюера
-- Ветки: `feature/...`, `fix/...`; коммиты: feat, fix, test, refactor, docs, ci, chore
-
-## Лабораторная 8 — ответы
-
-- Какие тесты упали, когда убрали adminOnly у POST, и почему: ...
-- Покрытие (Lines) и одна непокрытая строка — почему её не проверяет ни один тест: ...
-- Чем unit-тест requireRole отличается от интеграционного теста в access.test.js: ...
-- Какие замечания я получил(а) на code-review и что исправил(а): ...
-- Какие замечания я оставил(а) напарнику: ...
-- Использовал(а) ли ИИ и для чего: ...
-
-## Продакшен
-
-- Сайт: https://agromarket-ЛОГИН.vercel.app
-- API: https://agromarket-api-ЛОГИН.onrender.com/api/health
-- Схема: React (Vercel) → Express (Render, Frankfurt) → PostgreSQL (Neon, Frankfurt)
-
-### Переменные окружения (значения только в панелях сервисов)
-
-| Переменная | Где задана | Секрет |
-|---|---|---|
-| DATABASE_URL | Render | да |
-| JWT_SECRET | Render | да |
-| JWT_EXPIRES_IN | Render | нет |
-| CORS_ORIGIN | Render | нет |
-| NODE_ENV | Render | нет |
-| VITE_API_URL | Vercel | нет |
-| RENDER_DEPLOY_HOOK_URL | GitHub Secrets | да |
-| API_URL, FRONTEND_URL | GitHub Variables | нет |
-
-### Конвейер
-
-Pull Request → CI (test) → merge в main → test → deploy (deploy hook Render с ref=SHA) → smoke-тест.
-
-### Аудит
-
-- Ответ на /api/health: db ok, version совпадает с последним коммитом main: ...
-- Заголовки helmet есть, X-Powered-By отсутствует: ...
-- Пароли в базе — хэши bcrypt: ...
-
-### Ответы на вопросы
-
-- Почему сервер и база в одном регионе: ...
-- Что сломалось бы без trust proxy: ...
-- Почему db:init нельзя на продакшене, а migrate можно: ...
+Тестовая база пересоздаётся перед каждым запуском. Если в адресе базы нет слова `test`, тесты не запустятся: это защита от случайного стирания основной базы.
 
 ## Безопасность
 
 - helmet: защитные заголовки, `X-Powered-By` отключён
-- CORS: только адреса из `CORS_ORIGIN`
-- Rate limit: `/api/auth/login` и `/api/auth/register` — 10 запросов с IP за 15 минут
-- Валидация zod: регистрация, вход, товары (POST/PUT), заявки
-- Тело запроса не больше 10 КБ (413)
+- CORS разрешён только для адресов из `CORS_ORIGIN`
+- Rate limit на вход и регистрацию: 10 запросов с одного IP за 15 минут
+- Валидация данных через zod: регистрация, вход, товары, заявки
+- Тело запроса не больше 10 КБ
 
-## Лабораторная 11 — ответы
+## Продакшен
 
-- Таблица аудита «до / после»: ...
-- npm audit: что нашли, что исправили, что оставили и почему: ...
-- Были ли секреты в истории git: ...
-- Был ли возможен mass assignment (role: admin) до валидации: ...
-- Зачем trust proxy на Render: ...
-- Почему проверки в React-форме недостаточно: ...
-- Время отката на Vercel: ... с; почему после отката нужен git revert: ...
-- Использовал(а) ли ИИ и для чего: ...
+- Сайт: https://agromarket-react-theta.vercel.app
+- API: https://agromarket-api-login-3z19.onrender.com/api/health
+- Схема: React на Vercel, Express на Render (Frankfurt), PostgreSQL на Neon (Frankfurt)
 
+Переменные для продакшена задаются в панелях Render, Vercel и в GitHub (Secrets и Variables), в репозиторий они не попадают.
+
+Деплой: PR → CI (тесты) → merge в `main` → деплой через deploy hook Render → smoke-тест.
+
+## Git
+
+- `main` защищена, изменения идут через Pull Request
+- ветки: `feature/...`, `fix/...`, `security/...`
+- коммиты короткие и понятные: `feat:`, `fix:`, `test:`, `docs:`, `ci:`
